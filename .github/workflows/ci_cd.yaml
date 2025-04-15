@@ -1,0 +1,45 @@
+name: CI/CD Challenge Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test-deploy:
+    runs-on: [self-hosted, competition]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: docker build -t challenger-app .
+
+      - name: Run Unit Tests
+        run: |
+          docker run --rm challenger-app curl http://localhost:5000/health || exit 1
+
+      - name: Run App in Background
+        run: |
+          docker run -d -p 5000:5000 --name live-app challenger-app
+          sleep 5
+
+      - name: Validate Deployment + Inject Flag
+        run: |
+          bash validate.sh > validation_output.txt
+        env:
+          FLAG: ${{ secrets.FLAG || '' }}
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-logs
+          path: validation_output.txt
+
+      - name: Comment PR With Result
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ✅ Build and deployment complete.
+            📦 Logs are available in artifacts.
+            🏁 Flag was validated server-side.
