@@ -1,12 +1,19 @@
 name: CI/CD Challenge Pipeline
 
 on:
-  pull_request:
-    branches: [ main ]
+    push:
+        branches:
+        - main
+    pull_request:
+        branches:
+        - main
+    workflow_dispatch:
+        
+                                                                                 
 
 jobs:
   build-test-deploy:
-    runs-on: [self-hosted, competition]
+    runs-on: [self-hosted]
 
     steps:
       - name: Checkout Code
